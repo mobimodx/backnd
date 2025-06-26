@@ -232,58 +232,40 @@ class ApiController extends Controller
         return json_encode(['status' => false, 'message' => $e->getMessage()]);
     }
 }
-    public function Outfit(Request $request)
-    {
-        $tokens = '$2y$10$beZC9ycZaKOyd';
-        if($tokens!=$request->token){
-            return json_encode(['status' => false, 'message' => 'Unauthorized access!']);
-        }
+public function Outfit(Request $request)
+{
+    $tokens = '$2y$10$beZC9ycZaKOyd';
+    if($tokens!=$request->token){
+        return json_encode(['status' => false, 'message' => 'Unauthorized access!']);
+    }
+    
+    try {
         $client = new Client();
-
         $curl = curl_init();
-
-        // $image = $request->image;
         
         $category = $request->category;
 
         $inputData = [];
-        /*$human_img_url = $request->human_img;
-        $garm_img_url = $request->garm_img;*/
+        
         $human_img_url = '';
         $garm_img_url = '';
+        
         if ($request->hasFile('human_img')) {
-            // $old_profile = $user->profile;
             $file = $request->file('human_img');
-            $destinationPath = public_path('/uploads/images/');
-
-            $image = 'human_img' . time() . '.' . $file->getClientOriginalExtension();
-            $document_name = $file->getClientOriginalName();
-            // $document = $document_name;
-            $file->move($destinationPath, $image);
-            // $user->profile = $profile;
-            $human_img_url = env('Image_url').'/uploads/images/'.$image;
+            $imageData = base64_encode(file_get_contents($file->getPathname()));
+            $human_img_url = 'data:image/jpeg;base64,' . $imageData;
         }
         if ($request->hasFile('garm_img')) {
-            // $old_profile = $user->profile;
             $file1 = $request->file('garm_img');
-            $destinationPath1 = public_path('/uploads/images/');
-
-            $image1 = 'garm_img' . time() . '.' . $file1->getClientOriginalExtension();
-            $document_name = $file->getClientOriginalName();
-            // $document = $document_name;
-            $file1->move($destinationPath1, $image1);
-            // $user->profile = $profile;
-            $garm_img_url = env('Image_url').'/uploads/images/'.$image1;
+            $imageData1 = base64_encode(file_get_contents($file1->getPathname()));
+            $garm_img_url = 'data:image/jpeg;base64,' . $imageData1;
         }
-        
-        // $inputData['image'] = $image_url;
         
         $inputData['crop'] = false;
         $inputData['seed'] = 42;
         $inputData['steps'] = 30;
         $inputData['category'] = $category;
         $inputData['force_dc'] = false;
-
         $inputData['garm_img'] = $garm_img_url;
         $inputData['human_img'] = $human_img_url;
         $inputData['mask_only'] = false;
@@ -292,8 +274,6 @@ class ApiController extends Controller
         }else{
             $inputData['garment_des']='';
         }
-        
-
 
         curl_setopt_array($curl, array(
             CURLOPT_URL => 'https://api.replicate.com/v1/predictions',
@@ -335,17 +315,14 @@ class ApiController extends Controller
                 ));
 
                 $response1 = curl_exec($curl1);
-
                 curl_close($curl1);
                 $result1 = json_decode($response1,true);
                 if($result1['status']=='failed'){
                     break;
                 }
                 if(isset($result1['output'])){
-                    // $output = $result1['output'][0];
                     $output = $result1['output'];
                 }
-                // echo $response1;
             }while ($result1['status']!='succeeded');
         }
         
@@ -354,21 +331,24 @@ class ApiController extends Controller
         }else{
             return json_encode(['status' => false,'output'=> $output,'message' => 'this job has been failed please try again.']);
         }
+        
+    } catch (\Exception $e) {
+        return json_encode(['status' => false, 'message' => $e->getMessage()]);
     }
-    public function InteriorDesign(Request $request)
-    {
-        $tokens = '$2y$10$beZC9ycZaKOyd';
-        if($tokens!=$request->token){
-            return json_encode(['status' => false, 'message' => 'Unauthorized access!']);
-        }
+}
+   public function InteriorDesign(Request $request)
+{
+    $tokens = '$2y$10$beZC9ycZaKOyd';
+    if($tokens!=$request->token){
+        return json_encode(['status' => false, 'message' => 'Unauthorized access!']);
+    }
+    
+    try {
         $client = new Client();
-
         $curl = curl_init();
 
-        $image = $request->image;
         $prompt = $request->prompt;
         $n_prompt = $request->n_prompt;
-        
         $num_inference_steps = 50;
         $guidance_scale = $request->scale;
         $prompt_strength = $request->prompt_strength;
@@ -376,28 +356,18 @@ class ApiController extends Controller
 
         $inputData = [];
         $image_url = '';
+        
         if ($request->hasFile('image')) {
-            // $old_profile = $user->profile;
             $file = $request->file('image');
-            $destinationPath = public_path('/uploads/images/');
-
-            $image = 'interior' . time() . '.' . $file->getClientOriginalExtension();
-            $document_name = $file->getClientOriginalName();
-            // $document = $document_name;
-            $file->move($destinationPath, $image);
-            // $user->profile = $profile;
-            $image_url = env('Image_url').'/uploads/images/'.$image;
+            $imageData = base64_encode(file_get_contents($file->getPathname()));
+            $image_url = 'data:image/jpeg;base64,' . $imageData;
         }
         
         $inputData['image'] = $image_url;
-        // $inputData['image'] = $image;
         $inputData['prompt'] = $prompt;
-        /*$inputData['height'] = (int)$height;
-        $inputData['width'] = (int)$width;*/
         if($n_prompt !== null && $n_prompt !== '') {
             $inputData['negative_prompt'] = $n_prompt;
         }
-        // $inputData['num_outputs'] = $num_outputs;
         $inputData['num_inference_steps'] = $num_inference_steps;
         $inputData['guidance_scale'] = (int)$guidance_scale;
         $inputData['prompt_strength'] = (float)$prompt_strength;
@@ -422,7 +392,6 @@ class ApiController extends Controller
         ));
 
         $response = curl_exec($curl);
-        
         $result = json_decode($response,true);
         curl_close($curl);
 
@@ -446,7 +415,6 @@ class ApiController extends Controller
                 ));
 
                 $response1 = curl_exec($curl1);
-
                 curl_close($curl1);
                 $result1 = json_decode($response1,true);
                 if($result1['status']=='failed'){
@@ -455,7 +423,6 @@ class ApiController extends Controller
                 if(isset($result1['output'])){
                     $output = $result1['output'];
                 }
-                // echo $response1;
             }while ($result1['status']!='succeeded');
         }
         
@@ -464,6 +431,10 @@ class ApiController extends Controller
         }else{
             return json_encode(['status' => false,'output'=> $output,'message' => 'this job has been failed please try again.']);
         }
+        
+    } catch (\Exception $e) {
+        return json_encode(['status' => false, 'message' => $e->getMessage()]);
     }
+}
 }
         
